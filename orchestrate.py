@@ -132,6 +132,7 @@ def train_best_model(
     return None
 
 
+@task(log_prints=True)
 def example_email_send_message_flow(email_server_credentials):
     subject = email_send_message(
         email_server_credentials=email_server_credentials,
@@ -139,7 +140,10 @@ def example_email_send_message_flow(email_server_credentials):
         msg="This proves email_send_message works!",
         email_to=email_server_credentials.username,
     )
-    return subject
+
+    print(f"Send email notification with {subject}")
+
+    return None
 
 
 @flow
@@ -165,12 +169,12 @@ def main_flow(
 
     # Train
     train_best_model(X_train, X_val, y_train, y_val, dv)
-    
+
     # Send notification by email
     email_name = os.getenv("EMAIL_NAME")
     email_credentials_block = EmailServerCredentials.load(email_name)
     subject = example_email_send_message_flow(email_credentials_block)
-    
+
 
 if __name__ == "__main__":
     main_flow()
