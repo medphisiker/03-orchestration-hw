@@ -11,6 +11,8 @@ import mlflow
 import xgboost as xgb
 from prefect import flow, task
 from dotenv import load_dotenv, find_dotenv
+from prefect.artifacts import create_markdown_artifact
+from datetime import date
 
 
 @task(retries=3, retry_delay_seconds=2, name="Read taxi data")
@@ -108,6 +110,24 @@ def train_best_model(
         mlflow.log_artifact("models/preprocessor.b", artifact_path="preprocessor")
 
         mlflow.xgboost.log_model(booster, artifact_path="models_mlflow")
+        
+        markdown__rmse_report = f"""# RMSE Report
+
+        ## Summary
+
+        Duration Prediction 
+
+        ## RMSE XGBoost Model
+
+        | Region    | RMSE |
+        |:----------|-------:|
+        | {date.today()} | {rmse:.2f} |
+        """
+
+        create_markdown_artifact(
+            key="duration-model-report", markdown=markdown__rmse_report
+        )
+        
     return None
 
 
