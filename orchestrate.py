@@ -13,6 +13,7 @@ from prefect import flow, task
 from dotenv import load_dotenv, find_dotenv
 from prefect.artifacts import create_markdown_artifact
 from datetime import date
+from prefect_email import EmailServerCredentials, email_send_message
 
 
 @task(retries=3, retry_delay_seconds=2, name="Read taxi data")
@@ -110,7 +111,7 @@ def train_best_model(
         mlflow.log_artifact("models/preprocessor.b", artifact_path="preprocessor")
 
         mlflow.xgboost.log_model(booster, artifact_path="models_mlflow")
-        
+
         markdown__rmse_report = f"""# RMSE Report
 
         ## Summary
@@ -127,8 +128,18 @@ def train_best_model(
         create_markdown_artifact(
             key="duration-model-report", markdown=markdown__rmse_report
         )
-        
+
     return None
+
+
+def example_email_send_message_flow(email_server_credentials):
+    subject = email_send_message(
+        email_server_credentials=email_server_credentials,
+        subject="Test Notification using Gmail",
+        msg="This proves email_send_message works!",
+        email_to=email_server_credentials.username,
+    )
+    return subject
 
 
 @flow
@@ -154,7 +165,12 @@ def main_flow(
 
     # Train
     train_best_model(X_train, X_val, y_train, y_val, dv)
-
+    
+    # Send notification by email
+    email_name = os.getenv("EMAIL_NAME")
+    email_credentials_block = EmailServerCredentials.load(email_name)
+    subject = example_email_send_message_flow(email_credentials_block)
+    
 
 if __name__ == "__main__":
     main_flow()
